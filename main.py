@@ -536,12 +536,24 @@ def download_playlist_batch():
             return APIResponse.error(
                 "歌单中没有可用资源可供下载，请稍后重试或更换音质", 404
             )
+        results = []
+        for mid in download_ids:
+            result = api_service.downloader.download_music_file(
+                mid,
+                quality,
+                target_dir=target_dir,
+                save_cover=download_song_images
+            )
+            results.append(result)
 
         if download_playlist_image and playlist_info.get('coverImgUrl'):
             cover_path = target_dir / f"{safe_playlist_name}_cover.jpg"
             api_service.downloader.download_image(playlist_info['coverImgUrl'], cover_path)
 
         message = f"成功下载 {len(success_results)} 首，失败 {fail_count} 首"
+        success_count = len([r for r in results if r.success])
+        fail_count = len(results) - success_count
+        message = f"成功下载 {success_count} 首，失败 {fail_count} 首"
 
         zip_base = target_dir.parent / target_dir.name
         zip_path = shutil.make_archive(str(zip_base), 'zip', root_dir=target_dir)
